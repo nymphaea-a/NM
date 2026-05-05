@@ -454,10 +454,10 @@ struct ContentView: View {
                 }
                 .padding()
             }
-            .onChange(of: messages.count) { _ in
+            .onChange(of: messages.count) {
                 scrollToBottom(proxy: proxy)
             }
-            .onChange(of: messages.last?.content) { _ in
+            .onChange(of: messages.last?.content) {
                 scrollToBottom(proxy: proxy)
             }
         }
@@ -950,7 +950,7 @@ struct ContentView: View {
                         secretaryStartTime = nil
 
                         switch result {
-                        case .success(let (content, usage)):
+                        case .success(let (content, _)):
                             secretaryBaseContent = content
                             let fullContent = self.buildSecretaryDisplayContent()
                             let secretaryMsg = Message(sender: "秘书", content: fullContent, isUser: false)
@@ -1059,7 +1059,6 @@ struct ContentView: View {
         secretaryMessageID = nil
         finalStatements = [:]
 
-        let userName = Config.shared.userName.isEmpty ? "我" : Config.shared.userName
         messages.append(Message(sender: "系统", content: "✅ 最终论述已提交，各参会 AI 已获悉本轮讨论结论。您可以发起新一轮讨论。", isUser: false))
     }
 
