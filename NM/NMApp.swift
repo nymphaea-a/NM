@@ -10,10 +10,9 @@ import SwiftUI
 @main
 struct NMApp: App {
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(Config.shared.meetingName) {
             ContentView()
         }
-        .windowTitle(Config.shared.meetingName)
         .commands {
             CommandGroup(after: .appInfo) {
                 Button("设置...") {
