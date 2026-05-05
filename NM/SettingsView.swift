@@ -180,7 +180,7 @@ struct SettingsView: View {
         model: Binding<String>
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("参会 AI ②\("①②③"[index])")
+            Text("参会 AI \(["①", "②", "③"][index])")
                 .font(.headline)
 
             labeledField("名称", text: name, prompt: "例如：小鲸鱼")
