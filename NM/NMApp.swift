@@ -13,5 +13,18 @@ struct NMApp: App {
         WindowGroup {
             ContentView()
         }
+        .windowTitle(Config.shared.meetingName)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                Button("设置...") {
+                    NotificationCenter.default.post(name: .showSettings, object: nil)
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
+        }
     }
+}
+
+extension Notification.Name {
+    static let showSettings = Notification.Name("NMShowSettings")
 }

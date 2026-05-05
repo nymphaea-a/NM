@@ -1,0 +1,8 @@
+# Xcode
+*.xcuserdata
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# API 配置文件（含密钥）
+NM/Config.json
