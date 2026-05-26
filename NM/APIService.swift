@@ -44,6 +44,7 @@ struct APIService {
         config: any AIConfigProtocol,
         messages: [[String: String]],
         enableThinking: Bool = true,
+        timeout: TimeInterval = 120,
         completion: @escaping @Sendable (Result<(String, TokenUsage?), Error>) -> Void
     ) {
 
@@ -57,7 +58,7 @@ struct APIService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 120
+        request.timeoutInterval = timeout
 
         var body: [String: Any] = [
             "model": config.model,

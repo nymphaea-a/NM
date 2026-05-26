@@ -106,6 +106,10 @@ extension Theme {
                 language: configuration.language
             )
         }
+        // 链接
+        .link {
+            ForegroundColor(.blue)
+        }
         // 表格
         .table { configuration in
             configuration.label

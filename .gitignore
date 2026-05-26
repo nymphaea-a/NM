@@ -1,8 +1,59 @@
-# Xcode
+# ===================== Xcode =====================
 *.xcuserdata
 *.xcworkspace
 xcuserdata/
 DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
 
-# API 配置文件（含密钥）
+# ===================== 构建产物 =====================
+build/
+.build/
+*.app
+*.xcodeproj/xcuserdata/
+
+# ===================== Swift Package Manager =====================
+.swiftpm/
+Package.resolved
+
+# ===================== CocoaPods =====================
+Pods/
+
+# ===================== 敏感配置 =====================
 NM/Config.json
+
+# ===================== BGE-M3 模型 =====================
+# 模型文件通过 ModelScope 分发，不纳入 Git
+NM/RAG/models/BGE-M3.mlpackage/
+
+# ===================== Reports =====================
+# 内部开发文档，不开源
+Reports/
+
+# ===================== macOS 系统文件 =====================
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+Icon
+
+# ===================== IDE 无关文件 =====================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===================== 运行时数据 =====================
+# 用户运行时产生的会议存档目录（如果放在项目目录下）
+NM存档/

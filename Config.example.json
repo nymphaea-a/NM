@@ -1,0 +1,7 @@
+{
+  "userName": "你的名字",
+  "secretaryModel": "deepseek-v4-pro",
+  "participantNames": ["参会AI-1", "参会AI-2", "参会AI-3"],
+  "participantModels": ["deepseek-v4-pro", "deepseek-v4-pro", "deepseek-v4-pro"],
+  "customStorageBookmark": null
+}

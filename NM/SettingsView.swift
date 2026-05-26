@@ -3,11 +3,15 @@ import SwiftUI
 // MARK: - 设置面板
 
 struct SettingsView: View {
-    @Environment(\.dismiss) var dismiss
+    var dismissAction: (() -> Void)?
+    @EnvironmentObject var localization: LocalizationManager
+
+    private func close() {
+        dismissAction?()
+    }
 
     // 直接从 Documents 中的 Config.json 加载和保存
     @State private var userName: String = ""
-    @State private var meetingName: String = ""
 
     // 秘书
     @State private var secretaryAPIKey: String = ""
@@ -30,34 +34,145 @@ struct SettingsView: View {
     @State private var p3BaseURL: String = ""
     @State private var p3Model: String = ""
 
+    @State private var selectedStorageURL: URL?
+    @State private var customStorageBookmark: Data?
     @State private var errorMessage: String? = nil
+    @State private var selectedLanguage: AppLanguage = LocalizationManager.shared.language
 
     var body: some View {
         VStack(spacing: 0) {
             // 标题栏
             HStack {
-                Text("⚙ 设置")
+                Text(localization.settingsTitle)
                     .font(.title2)
                     .fontWeight(.semibold)
                 Spacer()
+                Button(localization.cancel) {
+                    close()
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+
+                Button(localization.confirm) {
+                    saveConfig()
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.accentColor)
+                )
+                .foregroundColor(.white)
             }
             .padding()
 
             Divider()
 
-            ScrollView {
+            // ── 错误提示 ──
+            if let error = errorMessage {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.red)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                    Spacer()
+                }
+                .padding(10)
+                .background(Color.red.opacity(0.08))
+            }
+
+            // ── 主内容区域 ──
+            HStack(alignment: .top, spacing: 24) {
+                // 左列: 用户信息 + 秘书
                 VStack(alignment: .leading, spacing: 16) {
-                    // ── 用户信息 ──
                     Group {
-                        Text("用户信息")
+                        Text(localization.userInfo)
                             .font(.headline)
-                        labeledField("你的名字", text: $userName, prompt: "例如：nomo")
-                        labeledField("会议名称", text: $meetingName, prompt: "例如：产品方案评审会")
+                        labeledField(localization.yourName, text: $userName, prompt: localization.namePrompt)
+                    }
+                    
+                    Divider()
+                    
+                    Group {
+                        Text(localization.storageSettings)
+                            .font(.headline)
+                        Text(localization.storageDescription)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        HStack(spacing: 8) {
+                            TextField(localization.storageNotSelected, text: .constant(selectedStorageURL?.path ?? ""))
+                                .textFieldStyle(.roundedBorder)
+                                .font(.body)
+                                .disabled(true)
+                            Button(localization.selectStorage) {
+                                selectStoragePath()
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                            )
+                        }
                     }
 
                     Divider()
 
-                    // ── 参会 AI ──
+                    Group {
+                        Text(localization.meetingSecretary)
+                            .font(.headline)
+                        Text(localization.secretaryDescription)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        labeledSecureField(localization.apiKey, text: $secretaryAPIKey, prompt: "sk-...")
+                        labeledField(localization.apiURL, text: $secretaryBaseURL, prompt: "https://api.example.com")
+                        labeledField(localization.modelLabel, text: $secretaryModel, prompt: localization.modelPlaceholder)
+                    }
+                    
+                    Divider()
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.secondary)
+                            Text(localization.thinkingModelInfo)
+                                .font(.callout)
+                                .foregroundColor(.secondary)
+                        }
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "lock.shield")
+                                .foregroundColor(.secondary)
+                            Text(localization.keychainSecurityInfo)
+                                .font(.callout)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.top, 4)
+
+                    // 语言设置
+                    Group {
+                        Text(localization.languageLabel)
+                            .font(.headline)
+                        Picker("", selection: $selectedLanguage) {
+                            Text("中文").tag(AppLanguage.chinese)
+                            Text("English").tag(AppLanguage.english)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(maxWidth: 200)
+                    }
+                    
+                    Divider()
+
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+
+                // 右列: 3 位参会 AI
+                VStack(alignment: .leading, spacing: 16) {
                     participantSection(
                         index: 1,
                         name: $p1Name,
@@ -86,85 +201,12 @@ struct SettingsView: View {
                         model: $p3Model
                     )
 
-                    Divider()
-
-                    // ── 会议秘书 ──
-                    Group {
-                        Text("会议秘书")
-                            .font(.headline)
-
-                        Text("秘书为必填项，负责汇总各方论述并生成会议纪要。")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        labeledSecureField("API Key", text: $secretaryAPIKey, prompt: "sk-...")
-                        labeledField("API URL", text: $secretaryBaseURL, prompt: "https://api.example.com")
-                        labeledField("模型", text: $secretaryModel, prompt: "例如：qwen3.5-plus")
-                    }
-
-                    Divider()
-
-                    // ── 思考模式说明 ──
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "info.circle")
-                            .foregroundColor(.secondary)
-                        Text("ℹ️ 本会议室仅支持可开启思考模式的 AI 模型（OpenAI 兼容模式）参会。会议秘书使用非思考模式 AI。")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    // ── 安全声明 ──
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "lock.shield")
-                            .foregroundColor(.secondary)
-                        Text("🔒 API 密钥仅保存在本地，不会上传至任何服务器。")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    // ── 错误提示 ──
-                    if let error = errorMessage {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundColor(.red)
-                            .padding(8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.red.opacity(0.08))
-                            )
-                    }
+                    Spacer()
                 }
-                .padding()
-            }
-
-            Divider()
-
-            // 底部按钮
-            HStack {
-                Spacer()
-                Button("取消") {
-                    dismiss()
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-
-                Button("确定") {
-                    saveConfig()
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.accentColor)
-                )
-                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
             }
             .padding()
         }
-        .frame(width: 500, height: 700)
         .onAppear {
             loadCurrentConfig()
         }
@@ -180,13 +222,13 @@ struct SettingsView: View {
         model: Binding<String>
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("参会 AI \(["①", "②", "③"][index])")
+            Text(localization.participantAILabel(index - 1))
                 .font(.headline)
 
-            labeledField("名称", text: name, prompt: "例如：小鲸鱼")
-            labeledSecureField("API Key", text: apiKey, prompt: "sk-...")
-            labeledField("API URL", text: baseURL, prompt: "https://api.example.com")
-            labeledField("模型", text: model, prompt: "例如：deepseek-v4-pro")
+            labeledField(localization.participantName, text: name, prompt: localization.participantNamePlaceholder)
+            labeledSecureField(localization.apiKey, text: apiKey, prompt: "sk-...")
+            labeledField(localization.apiURL, text: baseURL, prompt: "https://api.example.com")
+            labeledField(localization.modelLabel, text: model, prompt: localization.participantModelPlaceholder)
         }
     }
 
@@ -221,9 +263,27 @@ struct SettingsView: View {
     // MARK: - 加载当前配置
 
     func loadCurrentConfig() {
-        let config = loadDocumentsConfig()
+        let config = Config.shared
         userName = config.userName
-        meetingName = config.meetingName
+        customStorageBookmark = config.customStorageBookmark
+        
+        // 从书签还原URL用于显示
+        if let bookmark = customStorageBookmark {
+            do {
+                let (url, isStale) = try URL.from(securityBookmark: bookmark)
+                if isStale {
+                    errorMessage = localization.errorStorageExpired
+                    selectedStorageURL = nil
+                    customStorageBookmark = nil
+                } else {
+                    selectedStorageURL = url
+                }
+            } catch {
+                errorMessage = localization.errorStorageInvalid
+                selectedStorageURL = nil
+                customStorageBookmark = nil
+            }
+        }
 
         secretaryAPIKey = config.secretary.apiKey
         secretaryBaseURL = config.secretary.baseURL
@@ -256,16 +316,35 @@ struct SettingsView: View {
         errorMessage = nil
 
         let uName = userName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let mName = meetingName.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // 2. 校验必填
         guard !uName.isEmpty else {
-            errorMessage = "请填写你的名字"
+            errorMessage = localization.errorNameRequired
             return
         }
-
-        guard !mName.isEmpty else {
-            errorMessage = "请填写会议名称"
+        
+        guard let storageBookmark = customStorageBookmark, let storageURL = selectedStorageURL else {
+            errorMessage = localization.errorStorageRequired
+            return
+        }
+        
+        // 校验存储路径有效性和写入权限
+        do {
+            // 获取安全访问权限
+            guard storageURL.startAccessingSecurityScopedResource() else {
+                errorMessage = localization.errorStorageAccessDenied
+                return
+            }
+            defer {
+                storageURL.stopAccessingSecurityScopedResource()
+            }
+            
+            try FileManager.default.createDirectory(at: storageURL, withIntermediateDirectories: true)
+            let testFileURL = storageURL.appendingPathComponent(".nm_write_test_\(UUID().uuidString)")
+            try "test".write(to: testFileURL, atomically: true, encoding: .utf8)
+            try FileManager.default.removeItem(at: testFileURL)
+        } catch {
+            errorMessage = localization.errorStorageNoWritePermission(error.localizedDescription)
             return
         }
 
@@ -280,60 +359,91 @@ struct SettingsView: View {
         let secModel = secretaryModel.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !secKey.isEmpty, !secURL.isEmpty, !secModel.isEmpty else {
-            errorMessage = "会议秘书为必填项，请完整填写 API Key、API URL 和模型"
+            errorMessage = localization.errorSecretaryRequired
             return
         }
 
         // 5. 校验部分填写的参会 AI —— 允许全空，也允许全填满，但不允许只填一部分
         if !p1Configured.allFilled && p1Configured.anyFilled {
-            errorMessage = "参会 AI ① 的字段未填写完整（名称、API Key、API URL、模型均需填写）"
+            errorMessage = localization.errorParticipantIncomplete(0)
             return
         }
         if !p2Configured.allFilled && p2Configured.anyFilled {
-            errorMessage = "参会 AI ② 的字段未填写完整（名称、API Key、API URL、模型均需填写）"
+            errorMessage = localization.errorParticipantIncomplete(1)
             return
         }
         if !p3Configured.allFilled && p3Configured.anyFilled {
-            errorMessage = "参会 AI ③ 的字段未填写完整（名称、API Key、API URL、模型均需填写）"
+            errorMessage = localization.errorParticipantIncomplete(2)
             return
         }
 
-        // 6. 构建 AppConfig 并写入 Documents
+        // 6. 保存到 Keychain
+        SecretaryConfig(apiKey: secKey, baseURL: secURL, model: secModel).saveToKeychain()
+        
+        let participants = [
+            ParticipantConfig(
+                name: p1Name.trimmingCharacters(in: .whitespacesAndNewlines),
+                apiKey: p1APIKey.trimmingCharacters(in: .whitespacesAndNewlines),
+                baseURL: p1BaseURL.trimmingCharacters(in: .whitespacesAndNewlines),
+                model: p1Model.trimmingCharacters(in: .whitespacesAndNewlines)
+            ),
+            ParticipantConfig(
+                name: p2Name.trimmingCharacters(in: .whitespacesAndNewlines),
+                apiKey: p2APIKey.trimmingCharacters(in: .whitespacesAndNewlines),
+                baseURL: p2BaseURL.trimmingCharacters(in: .whitespacesAndNewlines),
+                model: p2Model.trimmingCharacters(in: .whitespacesAndNewlines)
+            ),
+            ParticipantConfig(
+                name: p3Name.trimmingCharacters(in: .whitespacesAndNewlines),
+                apiKey: p3APIKey.trimmingCharacters(in: .whitespacesAndNewlines),
+                baseURL: p3BaseURL.trimmingCharacters(in: .whitespacesAndNewlines),
+                model: p3Model.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+        ]
+        
+        for p in participants where !p.apiKey.isEmpty {
+            p.saveToKeychain()
+        }
+
+        // 7. 构建 AppConfig 并写入 Documents
         let newConfig = AppConfig(
             userName: uName,
-            meetingName: mName,
-            secretary: SecretaryConfig(
-                apiKey: secKey,
-                baseURL: secURL,
-                model: secModel
-            ),
-            participants: [
-                ParticipantConfig(
-                    name: p1Name.trimmingCharacters(in: .whitespacesAndNewlines),
-                    apiKey: p1APIKey.trimmingCharacters(in: .whitespacesAndNewlines),
-                    baseURL: p1BaseURL.trimmingCharacters(in: .whitespacesAndNewlines),
-                    model: p1Model.trimmingCharacters(in: .whitespacesAndNewlines)
-                ),
-                ParticipantConfig(
-                    name: p2Name.trimmingCharacters(in: .whitespacesAndNewlines),
-                    apiKey: p2APIKey.trimmingCharacters(in: .whitespacesAndNewlines),
-                    baseURL: p2BaseURL.trimmingCharacters(in: .whitespacesAndNewlines),
-                    model: p2Model.trimmingCharacters(in: .whitespacesAndNewlines)
-                ),
-                ParticipantConfig(
-                    name: p3Name.trimmingCharacters(in: .whitespacesAndNewlines),
-                    apiKey: p3APIKey.trimmingCharacters(in: .whitespacesAndNewlines),
-                    baseURL: p3BaseURL.trimmingCharacters(in: .whitespacesAndNewlines),
-                    model: p3Model.trimmingCharacters(in: .whitespacesAndNewlines)
-                )
-            ]
+            secretaryModel: secModel,
+            participantNames: participants.map(\.name),
+            participantModels: participants.map(\.model),
+            customStorageBookmark: storageBookmark
         )
 
-        saveToDocuments(newConfig)
-        dismiss()
+        Config.save(appConfig: newConfig)
+        Config.reload()
+        // 应用语言设置
+        localization.setLanguage(selectedLanguage)
+        close()
     }
 
     // MARK: - 辅助方法
+    
+    private func selectStoragePath() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.title = localization.selectStorageTitle
+        panel.prompt = localization.selectButton
+        
+        if panel.runModal() == .OK, let url = panel.url {
+            selectedStorageURL = url
+            do {
+                // 生成安全书签
+                customStorageBookmark = try url.securityBookmark()
+                errorMessage = nil
+            } catch {
+                errorMessage = localization.errorStorageBookmarkAccessDenied(error.localizedDescription)
+                selectedStorageURL = nil
+                customStorageBookmark = nil
+            }
+        }
+    }
 
     struct FilledStatus {
         let allFilled: Bool
@@ -350,37 +460,4 @@ struct SettingsView: View {
         return FilledStatus(allFilled: all, anyFilled: any)
     }
 
-    // MARK: - 文件 IO
-
-    func loadDocumentsConfig() -> AppConfig {
-        let fileManager = FileManager.default
-        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let configURL = documentsURL.appendingPathComponent("Config.json")
-
-        if fileManager.fileExists(atPath: configURL.path) {
-            do {
-                let data = try Data(contentsOf: configURL)
-                return try JSONDecoder().decode(AppConfig.self, from: data)
-            } catch {
-                // 如果解析失败，返回默认空配置
-            }
-        }
-        // 如果 Documents 中还没有，从当前全局配置取
-        return Config.shared
-    }
-
-    func saveToDocuments(_ config: AppConfig) {
-        let fileManager = FileManager.default
-        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let configURL = documentsURL.appendingPathComponent("Config.json")
-
-        do {
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let data = try encoder.encode(config)
-            try data.write(to: configURL)
-        } catch {
-            errorMessage = "保存失败：\(error.localizedDescription)"
-        }
-    }
 }
