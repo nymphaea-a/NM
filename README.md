@@ -20,7 +20,7 @@
 
 ## 这是什么？
 
-Normal Meeting 是一款 macOS 原生桌面应用，模拟多位 AI 角色围绕一个议题进行圆桌讨论。
+Normal Meeting 是一款 macOS 原生桌面应用，模拟多位 AI 角色围绕一个议题进行圆桌讨论。代码全部由 AI 完成（deepseek-v4-pro、doubao-seed-2.0-pro、qwen3.6-plus）。
 
 你发起议题 → AI 依次发言 → 会议秘书汇总观点并指出分歧 → 匿名盲评 → 多轮迭代 → 生成完整纪要。
 
