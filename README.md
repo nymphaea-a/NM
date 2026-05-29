@@ -173,6 +173,6 @@ NM/
 
 ## License
 
-MIT License © 2026 Nymphaea
+MIT License © 2026 Nymphaea（nymphaea@zohomail.cn)
 
 BGE-M3 模型文件遵循 [BAAI/bge-m3](https://huggingface.co/BAAI/bge-m3) 原始许可（MIT）。模型托管在 [ModelScope](https://modelscope.cn/models/nymphaeavara/bge-m3-coreml)。
